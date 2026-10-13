@@ -1,0 +1,37 @@
+COMMERCIAL SOFTWARE LICENSE AGREEMENT (PROPRIETARY)
+
+Copyright (c) 2026 Aegis Technologies / Oleg Irshko. All Rights Reserved.
+
+IMPORTANT: PLEASE READ THIS LICENSE AGREEMENT CAREFULLY BEFORE USING OR DEPLOYING THIS SOFTWARE.
+
+1. PROPRIETARY NATURE & OWNERSHIP
+This software, source code, algorithms, architectures, and associated documentation
+("Software") are the valuable proprietary property and confidential trade secrets of
+Aegis Technologies and Oleg Irshko ("Licensor"). All intellectual property rights,
+including copyrights, patents, trademarks, and trade secret rights in and to the Software,
+remain exclusively with the Licensor.
+
+2. LICENSE RESTRICTIONS
+This Software is NOT open-source and is NOT licensed under MIT, Apache, GPL, or any
+permissive license. No person, organization, financial institution, or legal entity
+is permitted to:
+(a) Copy, distribute, sublicense, rent, lease, or make available the Software to third parties;
+(b) Reverse engineer, decompile, decrypt, disassemble, or extract proprietary financial algorithms;
+(c) Modify, adapt, translate, or create derivative works of the Software;
+(d) Deploy, execute, or utilize the Software in production, staging, or commercial environments
+    without a valid, fully executed commercial licensing agreement and an active, cryptographically
+    signed license activation key issued directly by the Licensor.
+
+3. ACTIVATION & ENFORCEMENT
+Operation of the Software within on-premise infrastructure requires periodic cryptographic
+license activation. Unauthorized bypass, tampering, or manipulation of the licensing
+subsystem constitutes copyright infringement and intentional breach of commercial agreement.
+
+4. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
+IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, LOSS OF PROFITS,
+FINANCIAL TRADING LOSSES, OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
+
+For commercial licensing, enterprise on-premise deployment, and activation keys, contact:
+Aegis Technologies / Oleg Irshko
+
