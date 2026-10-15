@@ -63,17 +63,18 @@ pub struct HHIResult {
 
 ### 4.2. `calculate_allocation` (Аллокация по классам активов)
 * **Входные данные:** `positions: Vec<PositionInput>`
-* **Логика:** Суммирование стоимости позиций по классам: `share`, `bond`, `etf`, `currency` (деньги/кэш), `other` и расчёт их долей в процентах ($0.0 \dots 100.0\%$).
-* **Выходная структура `AllocationResult` (или `HashMap<String, f64>`):**
+* **Логика:** Суммирование стоимости позиций по классам: `share`, `bond`, `etf`, `currency` (деньги/кэш), `other` и расчёт их нормализованных долей в портфеле (в долях от 1.0, сумма долей = 1.0).
+* **Выходные данные:** `HashMap<String, f64>` (контракт `engine_adapter.py` / `sector_allocation`).
 ```rust
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AllocationResult {
-    pub shares: f64,      // Процент акций (0.0 .. 100.0)
-    pub bonds: f64,       // Процент облигаций (0.0 .. 100.0)
-    pub etf: f64,         // Процент ETF / БПИФ (0.0 .. 100.0)
-    pub currencies: f64,  // Процент валюты и ликвидности (0.0 .. 100.0)
-}
+// Возвращает HashMap со стандартизированными сингулярными ключами и долями от 1.0:
+// "share"    => 0.621 (доля акций)
+// "bond"     => 0.379 (доля облигаций)
+// "etf"      => 0.000 (доля фондов)
+// "currency" => 0.000 (доля ликвидности / кэша)
+// "other"    => 0.000 (прочие активы)
+pub fn calculate_allocation(positions: &[PositionInput]) -> HashMap<String, f64>
 ```
+> **Внимание:** Ключи строго в единственном числе (`share`, `bond`, `etf`, `currency`, `other`), а значения — доли в диапазоне `0.0 .. 1.0`. Преобразование в проценты ($0.0 \dots 100.0\%$) и сериализацию во множественное число (`shares`, `bonds`, `currencies`) выполняет контроллер `views.py`.
 
 ### 4.3. `simulate_stress` (Стресс-тестирование просадки)
 * **Входные данные:**

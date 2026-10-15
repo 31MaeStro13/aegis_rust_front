@@ -70,7 +70,7 @@ export interface StressSimulationResult {
   scenario: 'stress';
   top_ticker: string;          // Крупнейший актив, подвергшийся стрессу
   top_value: number;           // Начальная стоимость актива
-  drop_pct: number;            // Процент падения (напр. 0.15)
+  drop_pct: number;            // Процент падения в % (напр. 15.0)
   loss_rub: number;            // Абсолютный убыток в рублях
   loss_pct: number;            // Относительный убыток портфеля в %
   stressed_total: number;      // Новая стоимость портфеля после просадки
@@ -93,12 +93,29 @@ export interface PortfolioSimulationRequest {
   positions: PositionDTO[];
 }
 
-export interface ClientProfile {
-  id: string;
+export interface ClientAccount {
+  id: number;
+  account_id: string;
   name: string;
-  risk_profile: 'Консервативный' | 'Умеренный' | 'Агрессивный';
-  total_aum: number;
-  unrealized_pnl_pct: number;
+  account_type: string;
+  status: string;
+  total_amount: string;        // Decimal string, e.g. "14250000.00"
+}
+
+export interface ClientProfile {
+  id: number;
+  advisor: number;
+  advisor_username: string;
+  full_name: string;
+  email?: string;
+  phone?: string;
+  risk_profile: 'conservative' | 'moderate' | 'aggressive';
+  notes?: string;
+  accounts_count: number;
+  total_aum: string;           // Decimal string, e.g. "14250000.00"
+  accounts?: ClientAccount[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 // 🔐 Authentication & 2FA Types
@@ -172,25 +189,41 @@ export interface Setup2FAResponse {
 * **URL**: `POST /api/v1/portfolio/upload/`
 * **Content-Type**: `multipart/form-data`
 * **Параметры формы**:
-  * `file`: файл (`.csv` или `.xlsx`, максимум 5MB)
-  * `account_name` *(опционально)*: строковое имя счёта (по умолчанию `"Основной портфель"`)
-  * `client_id` *(опционально)*: ID выбранного клиента
+  * `file`: брокерский отчёт (`.csv` или `.xlsx`, максимум 5 МБ).
+  > **Архитектурная деталь:** Парсинг и скоринг выполняются in-memory на лету. Метод возвращает готовый DTO для отображения в терминале и последующего сценарного моделирования.
 
 #### Пример ответа (`HTTP 200 OK`):
 ```json
 {
-  "account_name": "Основной портфель",
-  "client_id": "client-1",
+  "account_name": "Импорт: broker_statement",
+  "total_value": 500000.0,
+  "currency": "RUB",
+  "positions_count": 2,
+  "analytics": {
+    "hhi_index": 5292.8,
+    "concentration_level": "high",
+    "concentration_label": "Высокая концентрация (Повышенный риск)",
+    "top_asset_share_pct": 62.1,
+    "top_5_share_pct": 100.0,
+    "critical_asset": "SBER 62.1%",
+    "allocation": {
+      "shares": 62.1,
+      "bonds": 37.9,
+      "etf": 0.0,
+      "currencies": 0.0
+    }
+  },
   "positions": [
     {
       "ticker": "SBER",
-      "name": "Сбербанк",
+      "name": "Сбербанк ПАО",
       "instrument_type": "share",
       "quantity": 1000.0,
       "current_price": 310.5,
       "total_value": 310500.0,
       "weight": 62.1,
-      "currency": "RUB"
+      "currency": "RUB",
+      "is_critical": true
     },
     {
       "ticker": "SU26238RMFS4",
@@ -200,32 +233,11 @@ export interface Setup2FAResponse {
       "current_price": 758.0,
       "total_value": 189500.0,
       "weight": 37.9,
-      "currency": "RUB"
+      "currency": "RUB",
+      "is_critical": false
     }
   ],
-  "analytics": {
-    "total_value": 500000.0,
-    "hhi_index": 5292.8,
-    "concentration_level": "high",
-    "asset_allocation": {
-      "share": 62.1,
-      "bond": 37.9,
-      "etf": 0.0,
-      "currency": 0.0
-    },
-    "top_holdings": [
-      {
-        "ticker": "SBER",
-        "name": "Сбербанк",
-        "instrument_type": "share",
-        "quantity": 1000.0,
-        "current_price": 310.5,
-        "total_value": 310500.0,
-        "weight": 62.1,
-        "currency": "RUB"
-      }
-    ]
-  }
+  "warnings": []
 }
 ```
 
@@ -273,7 +285,7 @@ export interface Setup2FAResponse {
   "scenario": "stress",
   "top_ticker": "SBER",
   "top_value": 310500.0,
-  "drop_pct": 0.15,
+  "drop_pct": 15.0,
   "loss_rub": 46575.0,
   "loss_pct": 9.32,
   "stressed_total": 453425.0
@@ -429,7 +441,8 @@ export interface Setup2FAResponse {
 
 | HTTP Код | Причина | Пример ответа |
 | :--- | :--- | :--- |
-| **400 Bad Request** | Файл отсутствует / неверный формат | `{"detail": "Передайте файл в поле 'file' (поддерживаются .csv, .xlsx, .xls)."}` |
+| **400 Bad Request** | Файл отсутствует / не передан | `{"detail": "Файл не найден. Отправьте файл брокерского отчета в поле 'file'."}` |
+| **400 Bad Request** | Неподдерживаемый формат файла | `{"detail": "Не поддерживаемый формат файла. Загрузите .csv или .xlsx"}` |
 | **400 Bad Request** | Размер файла превышает 5 МБ | `{"detail": "Размер файла превышает допустимый лимит (5 МБ)."}` |
 | **400 Bad Request** | Ошибка валидации структуры / пустой список | `{"detail": "Некорректная структура переданных позиций.", "errors": [...]}` или `{"positions": ["Обязательное поле."]}` |
 | **429 Too Many Requests** | Превышен лимит запросов (Rate Limit) | `{"detail": "Request was throttled. Expected available in 30 seconds."}` |

@@ -116,10 +116,11 @@ class PositionDTO(BaseModel):
 ```
 * **Total Portfolio Value:** `10,000,000.00 RUB`
 * **Baseline Deterministic HHI:**
-  $$HHI = 45.825^2 + 26.04^2 + 20.55^2 + 7.585^2 = 2099.93 + 678.08 + 422.30 + 57.53 = \mathbf{3257.84} \quad (\text{High Risk} > 2500)$$
-* **Baseline Stress Test ($-15\%$ Equity Shock):**
-  * Equities value: `9,241,500.00 RUB` $\times 0.15 =$ **$-1,386,225.00$ RUB loss**
-  * Protective Capital Preserved: `758,500.00 RUB`
+  $$HHI = 45.825^2 + 26.04^2 + 20.55^2 + 7.585^2 = \mathbf{3257.85} \quad (\text{High Risk} \ge 2500, \text{Backend: } 3257.8)$$
+* **Baseline Stress Test ($-15\%$ Top-Holding Shock per Core Engine):**
+  * Top Holding: SBER (`4,582,500.00 RUB`) $\times 0.15 =$ **$-687,375.00$ RUB loss** ($-6.87\%$ of total capital).
+  * Stressed Portfolio Valuation: `9,312,625.00 RUB`.
+  * *(Alternative full-equity shock: `9,241,500.00 RUB` $\times 0.15 = -1,386,225.00$ RUB).*
 
 ---
 
@@ -184,7 +185,7 @@ class PositionDTO(BaseModel):
 ```
 * **Total Portfolio Value:** `10,000,000.00 RUB`
 * **Baseline Deterministic HHI:**
-  $$HHI = 27.01^2 + 24.625^2 + 18.24^2 + 15.275^2 + 14.85^2 = \mathbf{2122.36} \quad (\text{Moderate Risk} \in [1500, 2500])$$
+  $$HHI = 27.01^2 + 24.625^2 + 18.24^2 + 15.275^2 + 14.85^2 = \mathbf{2122.48} \quad (\text{Medium Risk} \in [1500, 2500), \text{Backend: } 2122.5)$$
 
 ---
 

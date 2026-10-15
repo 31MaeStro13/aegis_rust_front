@@ -18,10 +18,10 @@ Our deterministic engine currently implements the following portfolio metrics:
 
 * **Herfindahl-Hirschman Index (HHI):**
   $$HHI = \sum_{i=1}^{N} w_i^2 \quad (w_i \in [0, 100])$$
-  *Risk Categorization Thresholds:*
-  * $HHI < 1500$: Low concentration risk (Well-diversified)
-  * $1500 \le HHI \le 2500$: Moderate concentration risk
-  * $HHI > 2500$: High concentration risk (Critical single-asset exposure)
+  *Risk Categorization Thresholds (Backend ChoiceField: `low` | `medium` | `high`):*
+  * $HHI < 1500$: Low concentration risk (`"low"`, Well-diversified)
+  * $1500 \le HHI < 2500$: Medium concentration risk (`"medium"`)
+  * $HHI \ge 2500$: High concentration risk (`"high"`, Critical single-asset exposure)
 
 * **Sharpe Ratio:**
   $$\text{Sharpe} = \frac{R_p - R_f}{\sigma_p}$$
