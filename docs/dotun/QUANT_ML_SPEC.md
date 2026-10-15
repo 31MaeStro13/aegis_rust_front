@@ -104,6 +104,6 @@ Every raw tabular extract must be deterministically parsed and normalized into o
 ## 🛠️ Repository & Environment Setup
 
 * **External Development Workspace:** `https://github.com/31MaeStro13/aegis_rust_front`
-* **Local Backend API Reference:** `docs/FRONTEND_API.md`
-* **Rust Computation Engine Spec:** `docs/RUST_CORE_SPEC.md`
+* **Local Backend API Reference:** `docs/nikita/FRONTEND_API.md`
+* **Rust Computation Engine Spec:** `docs/anastasia/RUST_CORE_SPEC.md`
 * **Python Runtime:** Python 3.12 (managed via `uv`), PyTorch, Pandas, Scipy, Scikit-learn.

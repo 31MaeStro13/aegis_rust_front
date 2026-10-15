@@ -39,42 +39,58 @@ export interface PositionDTO {
   expected_yield?: number;     // Купонная/дивидендная доходность в %
 }
 
+export interface PortfolioAllocation {
+  shares: number;       // Доля акций в % (напр. 62.0)
+  bonds: number;        // Доля облигаций в % (напр. 24.0)
+  etf: number;          // Доля фондов в % (напр. 9.0)
+  currencies: number;   // Доля валюты/кэша в % (напр. 5.0)
+}
+
 export interface PortfolioAnalytics {
-  total_value: number;                 // Общая стоимость в рублях
   hhi_index: number;                   // Индекс Херфиндаля-Хиршмана (0 - 10000)
-  concentration_level: 'low' | 'moderate' | 'high'; // Оценка диверсификации
-  asset_allocation: Record<InstrumentType, number>; // Доли активов: { share: 65.0, bond: 25.0, ... }
-  top_holdings: PositionDTO[];         // Топ-5 позиций по стоимости
+  concentration_level: 'low' | 'medium' | 'high'; // Оценка риска
+  concentration_label: string;         // 'Низкая' | 'Умеренная' | 'Высокая'
+  top_asset_share_pct: number;         // Доля крупнейшего актива в %
+  top_5_share_pct: number;             // Доля топ-5 активов в %
+  critical_asset: string | null;       // Напр. "SBER 38.0%"
+  allocation: PortfolioAllocation;     // Распределение по классам
 }
 
 export interface PortfolioUploadResponse {
-  positions: PositionDTO[];
-  analytics: PortfolioAnalytics;
-  client_id?: string;
   account_name: string;
+  total_value: number;
+  currency: string;
+  positions_count: number;
+  analytics: PortfolioAnalytics;
+  positions: PositionDTO[];
+  warnings: string[];
 }
 
 export interface StressSimulationResult {
-  loss_amount: number;         // Абсолютная просадка портфеля в рублях
-  simulated_total: number;     // Новая стоимость портфеля после просадки
-  market_drop_percent: number; // Напр. -15.0
-  safe_capital: number;        // Стоимость защитных активов (облигации + валюта)
+  scenario: 'stress';
+  top_ticker: string;          // Крупнейший актив, подвергшийся стрессу
+  top_value: number;           // Начальная стоимость актива
+  drop_pct: number;            // Процент падения (напр. 0.15)
+  loss_rub: number;            // Абсолютный убыток в рублях
+  loss_pct: number;            // Относительный убыток портфеля в %
+  stressed_total: number;      // Новая стоимость портфеля после просадки
 }
 
-export interface RebalanceProposal {
-  source_ticker: string;       // Из какого актива забираем средства
-  target_ticker: string;       // Куда направляем (напр. "ОФЗ 26238")
-  target_name: string;         // "ОФЗ с фикс. купоном"
-  rebalance_amount: number;    // Рекомендуемая сумма переноса в рублях
-  target_yield_percent: number;// Доходность инструмента (напр. 19.0)
-  projected_annual_income: number; // Ожидаемый годовой пассивный доход
+export interface RebalanceSimulationResult {
+  scenario: 'rebalance';
+  shift_amount: number;        // Сумма перевода в облигации
+  top_ticker: string;          // Из какого актива забираем средства
   old_hhi: number;             // HHI до ребалансировки
   new_hhi: number;             // Прогнозируемый HHI после ребалансировки
+  hhi_reduction: number;       // Снижение риска
+  target_instrument: string;   // 'ОФЗ-26240 Флоатер (19%)'
 }
 
-export interface SimulationResponse {
-  stress: StressSimulationResult;
-  rebalance: RebalanceProposal;
+export interface PortfolioSimulationRequest {
+  scenario: 'stress' | 'rebalance';
+  drop_pct?: number;           // Default: 0.15 (для scenario="stress")
+  shift_pct?: number;          // Default: 0.20 (для scenario="rebalance")
+  positions: PositionDTO[];
 }
 
 export interface ClientProfile {
@@ -221,55 +237,79 @@ export interface Setup2FAResponse {
 * **URL**: `POST /api/v1/portfolio/simulate/`
 * **Content-Type**: `application/json`
 
-#### Тело запроса:
+#### Тело запроса (Сценарий 1: Стресс-тест):
 ```json
 {
+  "scenario": "stress",
+  "drop_pct": 0.15,
   "positions": [
     {
       "ticker": "SBER",
-      "name": "Сбербанк",
-      "asset_type": "share",
+      "name": "Сбербанк ПАО",
+      "instrument_type": "share",
       "quantity": 1000.0,
       "current_price": 310.5,
       "total_value": 310500.0,
-      "share": 0.621,
+      "weight": 62.1,
       "currency": "RUB"
     },
     {
       "ticker": "SU26238RMFS4",
       "name": "ОФЗ 26238",
-      "asset_type": "bond",
+      "instrument_type": "bond",
       "quantity": 250.0,
       "current_price": 758.0,
       "total_value": 189500.0,
-      "share": 0.379,
+      "weight": 37.9,
       "currency": "RUB"
     }
-  ],
-  "drop_percent": 15.0,
-  "target_ofz_rate": 19.0
+  ]
 }
 ```
 
-#### Пример ответа (`HTTP 200 OK`):
+#### Ответ API при стресс-тесте (`HTTP 200 OK`):
 ```json
 {
-  "stress": {
-    "loss_amount": 46575.0,
-    "simulated_total": 453425.0,
-    "market_drop_percent": 15.0,
-    "safe_capital": 189500.0
-  },
-  "rebalance": {
-    "source_ticker": "SBER",
-    "target_ticker": "ОФЗ 26238",
-    "target_name": "ОФЗ с фиксированным купоном",
-    "rebalance_amount": 105000.0,
-    "target_yield_percent": 19.0,
-    "projected_annual_income": 19950.0,
-    "old_hhi": 5292.8,
-    "new_hhi": 3450.2
-  }
+  "scenario": "stress",
+  "top_ticker": "SBER",
+  "top_value": 310500.0,
+  "drop_pct": 0.15,
+  "loss_rub": 46575.0,
+  "loss_pct": 9.32,
+  "stressed_total": 453425.0
+}
+```
+
+#### Тело запроса (Сценарий 2: Ребалансировка в ОФЗ):
+```json
+{
+  "scenario": "rebalance",
+  "shift_pct": 0.20,
+  "positions": [
+    {
+      "ticker": "SBER",
+      "name": "Сбербанк ПАО",
+      "instrument_type": "share",
+      "quantity": 1000.0,
+      "current_price": 310.5,
+      "total_value": 310500.0,
+      "weight": 62.1,
+      "currency": "RUB"
+    }
+  ]
+}
+```
+
+#### Ответ API при ребалансировке (`HTTP 200 OK`):
+```json
+{
+  "scenario": "rebalance",
+  "shift_amount": 62100.0,
+  "top_ticker": "SBER",
+  "old_hhi": 3856.4,
+  "new_hhi": 2468.1,
+  "hhi_reduction": 1388.3,
+  "target_instrument": "ОФЗ-26240 Флоатер (19%)"
 }
 ```
 
@@ -281,26 +321,50 @@ export interface Setup2FAResponse {
 * **URL**: `POST /api/v1/portfolio/export_pdf/`
 * **Content-Type**: `application/json`
 * **Response Content-Type**: `application/pdf`
-* **Заголовки ответа**: `Content-Disposition: attachment; filename="audit_report.pdf"`
+* **Заголовки ответа**: `Content-Disposition: attachment; filename="Aegis_Audit_{Client_Name}.pdf"; filename*=UTF-8''Aegis_Audit_{Client_Name}.pdf`
 
-#### Тело запроса:
+#### Тело запроса (Параметры отчёта):
 ```json
 {
   "account_name": "Иван Иванов — Основной",
   "positions": [
     {
       "ticker": "SBER",
-      "name": "Сбербанк",
-      "asset_type": "share",
+      "name": "Сбербанк ПАО",
+      "instrument_type": "share",
       "quantity": 1000.0,
       "current_price": 310.5,
       "total_value": 310500.0,
-      "share": 0.621,
+      "weight": 62.1,
+      "currency": "RUB"
+    },
+    {
+      "ticker": "OFZ-26240",
+      "name": "ОФЗ 26240 Флоатер",
+      "instrument_type": "bond",
+      "quantity": 190.0,
+      "current_price": 1000.0,
+      "total_value": 190000.0,
+      "weight": 37.9,
       "currency": "RUB"
     }
-  ]
+  ],
+  "stress_test": {
+    "top_ticker": "SBER",
+    "drop_pct": 15.0,
+    "loss_rub": 46575.0,
+    "loss_pct": 9.3,
+    "stressed_total": 453925.0
+  },
+  "rebalance": {
+    "top_ticker": "SBER",
+    "old_hhi": 5291.6,
+    "new_hhi": 3415.2,
+    "hhi_reduction": 1876.4
+  }
 }
 ```
+> **Примечание:** Блоки `stress_test` и `rebalance` являются опциональными. При их передаче они автоматически отрисовываются в PDF-отчете в блоке «Risk Stress-Testing & Rebalance Advisory».
 
 ---
 
@@ -310,7 +374,7 @@ export interface Setup2FAResponse {
 * **URL**: `GET /api/v1/portfolio/template/?file_format=csv`  
   *(или `file_format=xlsx`)*
 * **Response Content-Type**: `text/csv; charset=utf-8` или `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
-* **Заголовки ответа**: `Content-Disposition: attachment; filename="portfolio_template.csv"`
+* **Заголовки ответа**: `Content-Disposition: attachment; filename="aegis_template.csv"` (для XLSX: `filename="aegis_template.xlsx"`)
 
 ---
 
@@ -365,11 +429,11 @@ export interface Setup2FAResponse {
 
 | HTTP Код | Причина | Пример ответа |
 | :--- | :--- | :--- |
-| **400 Bad Request** | Файл отсутствует / неверный формат / повреждён | `{"error": "Не поддерживаемый формат файла. Загрузите .csv или .xlsx"}` |
-| **400 Bad Request** | Размер файла превышает 5 МБ | `{"error": "Размер файла превышает 5 МБ"}` |
-| **400 Bad Request** | Пустой список позиций в запросе | `{"positions": ["Обязательное поле."]}` |
+| **400 Bad Request** | Файл отсутствует / неверный формат | `{"detail": "Передайте файл в поле 'file' (поддерживаются .csv, .xlsx, .xls)."}` |
+| **400 Bad Request** | Размер файла превышает 5 МБ | `{"detail": "Размер файла превышает допустимый лимит (5 МБ)."}` |
+| **400 Bad Request** | Ошибка валидации структуры / пустой список | `{"detail": "Некорректная структура переданных позиций.", "errors": [...]}` или `{"positions": ["Обязательное поле."]}` |
 | **429 Too Many Requests** | Превышен лимит запросов (Rate Limit) | `{"detail": "Request was throttled. Expected available in 30 seconds."}` |
-| **500 Internal Error** | Внутренняя ошибка парсера / движка | `{"error": "Ошибка обработки файла: ..."}` |
+| **500 Internal Error** | Внутренняя ошибка парсера / движка | `{"detail": "Ошибка обработки файла: ..."}` |
 
 ---
 

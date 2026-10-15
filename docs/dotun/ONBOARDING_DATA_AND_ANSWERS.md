@@ -22,7 +22,7 @@
 ### Question 3: Backend & ML Integration Architecture
 * **Answer:** Detailed in **Section 5 (Backend ↔ ML Interface Contract)**.
   * You do not write Django code.
-  * Your deliverable for Phase 2 is an isolated **FastAPI Microservice (Sidecar container)** exposing `POST /api/v1/normalize-statement`.
+  * Your deliverable for Phase 2 is an isolated **FastAPI Microservice (Sidecar container)** exposing `POST /api/v1/extract-positions`.
   * The main Django backend communicates with your service via HTTP REST inside the Docker network.
 
 ### Question 4: Baseline Parser & Model Constraints
@@ -249,6 +249,7 @@ You will package your Phase 2 inference script into a lightweight FastAPI servic
       "quantity": 1500.0,
       "current_price": 305.5,
       "total_value": 458250.0,
+      "weight": 28.5,
       "currency": "RUB"
     }
   ],
