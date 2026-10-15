@@ -53,7 +53,7 @@ AssetClass = Literal["share", "bond", "etf", "currency", "other"]
 class PositionDTO(BaseModel):
     ticker: str = Field(..., description="Exchange ticker symbol, e.g., SBER, SU26238RMFS4")
     name: str = Field(..., description="Full legal name of the asset")
-    asset_class: AssetClass = Field(default="other", description="Standard asset category")
+    instrument_type: AssetClass = Field(default="other", description="Standard asset category")
     quantity: Decimal = Field(..., ge=0, description="Number of lots or units held")
     current_price: Decimal = Field(..., ge=0, description="Current market price in quote currency")
     total_value: Decimal = Field(default=Decimal("0.0"), description="quantity * current_price")
@@ -75,7 +75,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "SBER",
     "name": "Sberbank PJSC",
-    "asset_class": "share",
+    "instrument_type": "share",
     "quantity": 15000,
     "current_price": 305.50,
     "total_value": 4582500.00,
@@ -85,7 +85,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "GAZP",
     "name": "Gazprom PJSC",
-    "asset_class": "share",
+    "instrument_type": "share",
     "quantity": 20000,
     "current_price": 130.20,
     "total_value": 2604000.00,
@@ -95,7 +95,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "LKOH",
     "name": "Lukoil PJSC",
-    "asset_class": "share",
+    "instrument_type": "share",
     "quantity": 300,
     "current_price": 6850.00,
     "total_value": 2055000.00,
@@ -105,7 +105,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "RUB",
     "name": "Russian Ruble Cash",
-    "asset_class": "currency",
+    "instrument_type": "currency",
     "quantity": 758500,
     "current_price": 1.00,
     "total_value": 758500.00,
@@ -131,7 +131,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "SU26238RMFS4",
     "name": "OFZ-PD 26238 (Maturity 2041)",
-    "asset_class": "bond",
+    "instrument_type": "bond",
     "quantity": 5000,
     "current_price": 540.20,
     "total_value": 2701000.00,
@@ -142,7 +142,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "SU29014RMFS6",
     "name": "OFZ-PK 29014 (Key Rate Floater)",
-    "asset_class": "bond",
+    "instrument_type": "bond",
     "quantity": 2500,
     "current_price": 985.00,
     "total_value": 2462500.00,
@@ -153,7 +153,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "LQDT",
     "name": "VIM Liquidity Money Market ETF",
-    "asset_class": "etf",
+    "instrument_type": "etf",
     "quantity": 1200000,
     "current_price": 1.52,
     "total_value": 1824000.00,
@@ -163,7 +163,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "SBER",
     "name": "Sberbank PJSC",
-    "asset_class": "share",
+    "instrument_type": "share",
     "quantity": 5000,
     "current_price": 305.50,
     "total_value": 1527500.00,
@@ -173,7 +173,7 @@ class PositionDTO(BaseModel):
   {
     "ticker": "TGLD",
     "name": "T-Capital Physical Gold ETF",
-    "asset_class": "etf",
+    "instrument_type": "etf",
     "quantity": 150000,
     "current_price": 9.90,
     "total_value": 1485000.00,
@@ -199,7 +199,7 @@ COLUMN_ALIASES = {
     "quantity": ["кол-во", "количество", "штук", "qty", "volume", "остаток"],
     "current_price": ["текущая цена", "цена", "рыночная цена", "last_price", "price", "курс"],
     "total_value": ["сумма", "стоимость", "рыночная стоимость", "total", "value", "оценка"],
-    "asset_class": ["вид актива", "тип", "класс", "type", "asset_type"],
+    "instrument_type": ["вид актива", "тип", "класс", "type", "asset_type"],
 }
 ```
 *Limitation of Baseline:* Whenever an XLSX statement embeds table headers on row 14, aggregates multiple currencies in merged sub-tables, or uses unrecognized aliases, regex/Pandas throws errors or truncates critical holdings. Your Phase 2 ML model will solve this problem.
@@ -245,7 +245,7 @@ You will package your Phase 2 inference script into a lightweight FastAPI servic
     {
       "ticker": "SBER",
       "name": "Sberbank PJSC",
-      "asset_class": "share",
+      "instrument_type": "share",
       "quantity": 1500.0,
       "current_price": 305.5,
       "total_value": 458250.0,

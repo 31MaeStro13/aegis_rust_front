@@ -24,24 +24,26 @@
 Скопируйте эти типы в проект фронтенда (`types/portfolio.ts`):
 
 ```typescript
-export type AssetType = 'share' | 'bond' | 'etf' | 'currency';
+export type InstrumentType = 'share' | 'bond' | 'etf' | 'currency' | 'other';
 
 export interface PositionDTO {
-  ticker: string;              // Напр. "SBER", "OFZ-26238"
+  ticker: string;              // Напр. "SBER", "SU26238RMFS4"
   name: string;                // Напр. "Сбербанк ПАО"
-  asset_type: AssetType;       // 'share' | 'bond' | 'etf' | 'currency'
+  instrument_type: InstrumentType; // 'share' | 'bond' | 'etf' | 'currency' | 'other'
   quantity: number;            // Кол-во лотов/бумаг
   current_price: number;       // Текущая цена за единицу в рублях
   total_value: number;         // quantity * current_price
-  share: number;               // Доля в портфеле (от 0.0 до 1.0)
+  weight: number;              // Доля в портфеле в ПРОЦЕНТАХ от 0.0 до 100.0 (напр. 28.5)
   currency: string;            // По умолчанию "RUB"
+  average_price?: number;      // Средняя цена покупки
+  expected_yield?: number;     // Купонная/дивидендная доходность в %
 }
 
 export interface PortfolioAnalytics {
   total_value: number;                 // Общая стоимость в рублях
   hhi_index: number;                   // Индекс Херфиндаля-Хиршмана (0 - 10000)
   concentration_level: 'low' | 'moderate' | 'high'; // Оценка диверсификации
-  asset_allocation: Record<AssetType, number>; // Доли активов: { share: 0.65, bond: 0.25, ... }
+  asset_allocation: Record<InstrumentType, number>; // Доли активов: { share: 65.0, bond: 25.0, ... }
   top_holdings: PositionDTO[];         // Топ-5 позиций по стоимости
 }
 
@@ -167,21 +169,21 @@ export interface Setup2FAResponse {
     {
       "ticker": "SBER",
       "name": "Сбербанк",
-      "asset_type": "share",
+      "instrument_type": "share",
       "quantity": 1000.0,
       "current_price": 310.5,
       "total_value": 310500.0,
-      "share": 0.621,
+      "weight": 62.1,
       "currency": "RUB"
     },
     {
       "ticker": "SU26238RMFS4",
       "name": "ОФЗ 26238",
-      "asset_type": "bond",
+      "instrument_type": "bond",
       "quantity": 250.0,
       "current_price": 758.0,
       "total_value": 189500.0,
-      "share": 0.379,
+      "weight": 37.9,
       "currency": "RUB"
     }
   ],
@@ -190,8 +192,8 @@ export interface Setup2FAResponse {
     "hhi_index": 5292.8,
     "concentration_level": "high",
     "asset_allocation": {
-      "share": 0.621,
-      "bond": 0.379,
+      "share": 62.1,
+      "bond": 37.9,
       "etf": 0.0,
       "currency": 0.0
     },
@@ -199,11 +201,11 @@ export interface Setup2FAResponse {
       {
         "ticker": "SBER",
         "name": "Сбербанк",
-        "asset_type": "share",
+        "instrument_type": "share",
         "quantity": 1000.0,
         "current_price": 310.5,
         "total_value": 310500.0,
-        "share": 0.621,
+        "weight": 62.1,
         "currency": "RUB"
       }
     ]

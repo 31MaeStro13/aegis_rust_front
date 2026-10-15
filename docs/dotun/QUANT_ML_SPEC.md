@@ -73,7 +73,7 @@ Every raw tabular extract must be deterministically parsed and normalized into o
 {
   "ticker": "SBER",
   "name": "Sberbank PJSC",
-  "asset_class": "share",
+  "instrument_type": "share",
   "quantity": 1500.0,
   "current_price": 280.5,
   "total_value": 420750.0,
@@ -82,7 +82,7 @@ Every raw tabular extract must be deterministically parsed and normalized into o
 }
 ```
 
-*Valid `asset_class` enumerations:* `["share", "bond", "etf", "currency", "other"]`.
+*Valid `instrument_type` enumerations:* `["share", "bond", "etf", "currency", "other"]`.
 
 ---
 
