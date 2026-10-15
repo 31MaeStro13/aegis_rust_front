@@ -37,6 +37,7 @@ export interface PositionDTO {
   currency: string;            // По умолчанию "RUB"
   average_price?: number;      // Средняя цена покупки
   expected_yield?: number;     // Купонная/дивидендная доходность в %
+  is_critical?: boolean;       // Флаг критической концентрации (доля >= 25%)
 }
 
 export interface PortfolioAllocation {
