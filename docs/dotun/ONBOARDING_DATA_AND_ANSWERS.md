@@ -1,8 +1,8 @@
-# 📦 Phase 1 Onboarding Data, Answers & Benchmark Contracts
+# 📦 Phase 1 Onboarding Data, Technical Architecture & Benchmark Contracts
 
 **Engineer:** MSc Dotun (Quantitative Financial Analyst & ML Engineer)  
 **Project:** Aegis Wealth Terminal (B2B SaaS / On-Premise)  
-**Assigned Workspace:** `crates/` or `research/` in `https://github.com/31MaeStro13/aegis_rust_front`
+**Assigned Workspace:** `research/` in `https://github.com/31MaeStro13/aegis_rust_front`
 
 ---
 
@@ -10,30 +10,25 @@
 
 ### Question 1: Deliverable Sequencing
 * **Answer:** **Yes, strictly complete Phase 1 before advancing to Phase 2.**
-* *Rationale:* The mathematical formulas, risk thresholds (VaR, CVaR, Sortino, Duration), and the 2-page executive report blueprint you design in Phase 1 directly dictate the UI cards that the frontend developer (Nikita) and UI designer (Anastasia) will render.
+* *Rationale:* The mathematical formulas, risk thresholds (VaR, CVaR, Sortino, Duration), and the 2-page executive report blueprint you design in Phase 1 directly dictate the UI cards that the frontend developer (Nikita) and UI designer (Taya) will render.
 * *Phase 1 Target Output:* A comprehensive Technical Memo (Markdown/PDF) + a reproducible Jupyter Notebook (`.ipynb`) computing these metrics on the benchmark datasets below.
 
 ### Question 2: PositionDTO Schema & Sample Portfolios
 * **Answer:** Fully documented below in **Section 2 & 3**. You are provided with:
-  1. The canonical Python Pydantic/dataclass schema for `PositionDTO`.
+  1. The canonical Python Pydantic schema for `PositionDTO`.
   2. Three heterogeneous portfolio datasets (Conservative OFZ, Balanced Multi-Asset, and High-Concentration Aggressive).
   3. Ground truth mathematical metrics for baseline verification.
 
-### Question 3: Workspace & Repository Placement
-* **Answer:** Your entire quantitative and ML pipeline will reside in the dedicated directory:
-  ```text
-  research/
-  ├── notebooks/              # Jupyter notebooks for Phase 1 & Phase 2
-  ├── data/                   # Messy CSVs, clean PositionDTO JSONs
-  ├── src/                    # Python modules (metrics.py, parser_baseline.py)
-  └── reports/                # Output PDF blueprints and memos
-  ```
-  *Zero Backend Contamination:* Your work remains decoupled from the internal Django backend. It will be packaged as a standalone analytical engine / microservice module.
+### Question 3: Backend & ML Integration Architecture
+* **Answer:** Detailed in **Section 5 (Backend ↔ ML Interface Contract)**.
+  * You do not write Django code.
+  * Your deliverable for Phase 2 is an isolated **FastAPI Microservice (Sidecar container)** exposing `POST /api/v1/normalize-statement`.
+  * The main Django backend communicates with your service via HTTP REST inside the Docker network.
 
-### Question 4: Baseline Parser & Model Preferences
+### Question 4: Baseline Parser & Model Constraints
 * **Answer:**
-  * **Baseline Parser:** We currently utilize a deterministic Pandas heuristic column-matching parser (detailed in **Section 4**).
-  * **SLM Preference:** For on-premise bank compliance, solutions must run without costly enterprise GPUs. Prioritize lightweight Small Language Models (SLMs) such as **`Qwen-2.5-Coder-1.5B-Instruct`** or **`Llama-3.2-1B-Instruct`** via `vLLM` or `llama.cpp` (GGUF 4-bit quantization).
+  * **Baseline:** Rule-based Pandas heuristic column-matching parser (see **Section 4**).
+  * **SLM Preference & Hardware Limits:** Detailed in **Section 6**. Target models must run on standard commodity Linux **CPU (Max 4 GB RAM, < 3.0s latency per statement)** using quantized GGUF (`llama.cpp`) or ONNX Runtime. No enterprise GPUs required.
 
 ### Question 5: Timeline & Acceptance Criteria
 * **Deadline for Phase 1:** **7 business days** from kickoff.
@@ -208,3 +203,80 @@ COLUMN_ALIASES = {
 }
 ```
 *Limitation of Baseline:* Whenever an XLSX statement embeds table headers on row 14, aggregates multiple currencies in merged sub-tables, or uses unrecognized aliases, regex/Pandas throws errors or truncates critical holdings. Your Phase 2 ML model will solve this problem.
+
+---
+
+## 🔗 5. Architecture: How Django Backend Connects with ML
+
+To ensure clean isolation and security, the ML engine will operate as an **independent sidecar microservice**:
+
+```text
+[Client Web UI] ──> [Django Backend :8000]
+                           │
+                           ├── 1. Try Fast Pandas Baseline (10ms)
+                           │      └── If successful (>95% confidence) ──> Return PositionDTO
+                           │
+                           └── 2. If Parser Fails / Unknown Format (Fallback)
+                                  └── HTTP POST ──> [FastAPI ML Microservice :8001]
+                                                    └── Returns validated JSON array
+```
+
+### 5.1. Microservice API Contract (FastAPI)
+You will package your Phase 2 inference script into a lightweight FastAPI service:
+
+* **Endpoint:** `POST /api/v1/extract-positions`
+* **Request Payload (from Django):**
+```json
+{
+  "file_name": "broker_statement_sample.xlsx",
+  "file_type": "xlsx", // or "csv"
+  "raw_content_base64": "<base64_encoded_file_bytes>",
+  "text_chunks": ["optional pre-extracted text/table rows"]
+}
+```
+
+* **Response Payload (to Django):**
+```json
+{
+  "status": "success",
+  "parser_used": "ml_slm_extractor",
+  "confidence_score": 0.985,
+  "positions": [
+    {
+      "ticker": "SBER",
+      "name": "Sberbank PJSC",
+      "asset_class": "share",
+      "quantity": 1500.0,
+      "current_price": 305.5,
+      "total_value": 458250.0,
+      "currency": "RUB"
+    }
+  ],
+  "unmapped_rows": []
+}
+```
+
+---
+
+## 📈 6. Historical Data Source for Phase 1 Metrics (VaR, Beta, Sharpe)
+
+To compute historical risk metrics (252-day volatility, beta vs. benchmark, historical VaR), use the official, free **Moscow Exchange Informational & Statistical Server (MOEX ISS API)**:
+
+* **Official API Docs:** `https://iss.moex.com`
+* **Python Libraries (Pre-approved):**
+  * `moexalgo` (Official MOEX Python SDK): `pip install moexalgo`
+  * `requests` directly against ISS REST endpoints:
+    * Stock Price History: `https://iss.moex.com/iss/history/engines/stock/markets/shares/securities/SBER.json?from=2025-01-01`
+    * Benchmark Index (`MCFTR` - Total Return Index): `https://iss.moex.com/iss/history/engines/stock/markets/index/securities/MCFTR.json?from=2025-01-01`
+* In your Jupyter Notebook, implement a clean caching utility saving downloaded price histories to `research/data/cache/` so notebooks execute offline without hitting MOEX rate limits.
+
+---
+
+## ⚡ 7. Hardware & SLA Constraints (On-Premise Banking Standards)
+
+Your ML solution must deploy inside private bank server environments without discrete Nvidia GPUs:
+
+1. **Host Environment:** Standard Linux x86_64 CPU (4 vCPU cores, 8 GB total server RAM).
+2. **RAM Consumption Limit:** The ML service must consume **$\le$ 4.0 GB RAM** at peak load.
+3. **Inference Latency SLA:** Statement extraction must complete in **$\le$ 3.0 seconds** per document on CPU.
+4. **Execution Runtimes:** Models must be formatted as **GGUF (Q4_K_M or Q8_0)** for `llama.cpp` / `vLLM` CPU backend, or exported to **ONNX Runtime**.
