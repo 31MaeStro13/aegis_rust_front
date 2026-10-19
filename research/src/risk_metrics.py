@@ -111,3 +111,133 @@ def calculate_beta(asset_returns, benchmark_returns):
         / benchmark_variance
     )
 
+
+def portfolio_daily_returns(asset_returns, weights):
+    """Calculate daily portfolio returns using fixed portfolio weights.
+
+    Parameters
+    ----------
+    asset_returns : array-like, shape (days, assets)
+        Daily returns for each asset, with one column per asset.
+    weights : array-like, shape (assets,)
+        Portfolio weights as fractions, such as 0.45 for 45%.
+
+    Notes
+    -----
+    This function assumes constant weights each day (daily rebalancing
+    to the specified weights). It does not model buy-and-hold drift.
+    """
+    returns = np.asarray(asset_returns, dtype=float)
+    weights = np.asarray(weights, dtype=float)
+
+    if returns.ndim != 2 or returns.shape[0] < 1 or returns.shape[1] < 1:
+        raise ValueError("asset_returns must be a non-empty 2D array.")
+
+    if weights.ndim != 1 or weights.size != returns.shape[1]:
+        raise ValueError("One weight is required for each asset.")
+
+    if not np.isfinite(returns).all():
+        raise ValueError("Asset returns must be finite.")
+
+    if not np.isfinite(weights).all():
+        raise ValueError("Weights must be finite.")
+
+    if (weights < 0).any():
+        raise ValueError("Weights cannot be negative.")
+
+    if not np.isclose(weights.sum(), 1.0, atol=1e-6):
+        raise ValueError("Weights must sum to 1.0.")
+
+    return returns @ weights
+
+
+def historical_var(returns, confidence_level=0.95):
+    """Historical Value at Risk as a positive loss fraction."""
+    returns = np.asarray(returns, dtype=float)
+
+    if returns.ndim != 1 or returns.size < 2:
+        raise ValueError("At least two portfolio returns are required.")
+
+    if not np.isfinite(returns).all():
+        raise ValueError("Returns must contain only finite values.")
+
+    if not 0 < confidence_level < 1:
+        raise ValueError("confidence_level must be between 0 and 1.")
+
+    return float(max(0.0, -np.quantile(returns, 1 - confidence_level)))
+
+
+def historical_cvar(returns, confidence_level=0.95):
+    """Historical CVaR/Expected Shortfall as a positive loss fraction.
+
+    Uses the average loss among returns at or below the empirical
+    return quantile for the requested tail probability.
+    """
+    returns = np.asarray(returns, dtype=float)
+
+    if returns.ndim != 1 or returns.size < 2:
+        raise ValueError("At least two portfolio returns are required.")
+
+    if not np.isfinite(returns).all():
+        raise ValueError("Returns must contain only finite values.")
+
+    if not 0 < confidence_level < 1:
+        raise ValueError("confidence_level must be between 0 and 1.")
+
+    cutoff = np.quantile(returns, 1 - confidence_level)
+    tail_returns = returns[returns <= cutoff]
+
+    if tail_returns.size == 0:
+        raise ValueError("No observations in the selected loss tail.")
+
+    return float(max(0.0, -tail_returns.mean()))
+
+
+def parametric_var(returns, confidence_level=0.95):
+    """Normal-distribution VaR as a positive loss fraction."""
+    from statistics import NormalDist
+
+    returns = np.asarray(returns, dtype=float)
+
+    if returns.ndim != 1 or returns.size < 2:
+        raise ValueError("At least two portfolio returns are required.")
+
+    if not np.isfinite(returns).all():
+        raise ValueError("Returns must contain only finite values.")
+
+    if not 0 < confidence_level < 1:
+        raise ValueError("confidence_level must be between 0 and 1.")
+
+    mean = float(np.mean(returns))
+    std = float(np.std(returns, ddof=1))
+    z_score = NormalDist().inv_cdf(confidence_level)
+
+    return float(max(0.0, -(mean - z_score * std)))
+
+
+def parametric_cvar(returns, confidence_level=0.95):
+    """Normal-distribution CVaR/Expected Shortfall as a positive loss fraction."""
+    from math import exp, pi, sqrt
+    from statistics import NormalDist
+
+    returns = np.asarray(returns, dtype=float)
+
+    if returns.ndim != 1 or returns.size < 2:
+        raise ValueError("At least two portfolio returns are required.")
+
+    if not np.isfinite(returns).all():
+        raise ValueError("Returns must contain only finite values.")
+
+    if not 0 < confidence_level < 1:
+        raise ValueError("confidence_level must be between 0 and 1.")
+
+    mean = float(np.mean(returns))
+    std = float(np.std(returns, ddof=1))
+
+    if std == 0:
+        return float(max(0.0, -mean))
+
+    z_score = NormalDist().inv_cdf(confidence_level)
+    density = exp(-0.5 * z_score**2) / sqrt(2 * pi)
+
+    return float(max(0.0, -mean + std * density / (1 - confidence_level)))

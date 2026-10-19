@@ -2,12 +2,73 @@
 import pytest
 
 from research.src.risk_metrics import (
+    calculate_beta,
     calculate_hhi,
     classify_hhi,
     daily_returns,
     annualized_volatility,
-    calculate_beta,
+    portfolio_daily_returns,
+    historical_var,
+    historical_cvar,
+    parametric_var,
+    parametric_cvar,
 )
+
+def test_portfolio_daily_returns_with_fixed_weights():
+    asset_returns = np.array([
+        [0.10, 0.00],
+        [-0.10, 0.02],
+        [0.00, -0.04],
+    ])
+    weights = [0.60, 0.40]
+
+    result = portfolio_daily_returns(asset_returns, weights)
+
+    np.testing.assert_allclose(result, [0.06, -0.052, -0.016])
+
+
+def test_portfolio_daily_returns_rejects_weights_not_summing_to_one():
+    with pytest.raises(ValueError, match="sum to 1.0"):
+        portfolio_daily_returns([[0.01, 0.02]], [0.6, 0.3])
+
+
+def test_historical_var_and_cvar_known_losses():
+    returns = np.array([-0.10, -0.05, -0.02, 0.01, 0.03])
+
+    assert np.isclose(historical_var(returns, 0.80), 0.06)
+    assert np.isclose(historical_cvar(returns, 0.80), 0.10)
+
+
+
+def test_parametric_var_known_result():
+    returns = np.array([-0.03, -0.01, 0.00, 0.01, 0.02])
+
+    result = parametric_var(returns, 0.95)
+
+    # Normal-distribution VaR, expressed as a positive loss fraction.
+    assert np.isclose(result, 0.03363, atol=0.00002)
+
+
+def test_parametric_cvar_known_result():
+    returns = np.array([-0.03, -0.01, 0.00, 0.01, 0.02])
+
+    result = parametric_cvar(returns, 0.95)
+
+    # Normal-distribution Expected Shortfall, expressed as a positive loss.
+    assert np.isclose(result, 0.04169, atol=0.00002)
+
+
+
+@pytest.mark.parametrize("function", [
+    historical_var,
+    historical_cvar,
+    parametric_var,
+    parametric_cvar,
+])
+def test_var_and_cvar_reject_invalid_confidence(function):
+    with pytest.raises(ValueError, match="confidence_level"):
+        function([-0.01, 0.01], 1.0)
+
 
 def test_dataset_a_hhi():
     weights = [45.825, 26.040, 20.550, 7.585]
@@ -84,3 +145,45 @@ def test_beta_rejects_mismatched_lengths():
 def test_beta_rejects_constant_benchmark():
     with pytest.raises(ValueError, match="positive variance"):
         calculate_beta([0.01, 0.02, 0.03], [0.01, 0.01, 0.01])
+
+
+def test_historical_var_known_values():
+    returns = np.array([-0.10, -0.05, 0.00, 0.02, 0.04])
+    result = historical_var(returns, confidence_level=0.80)
+    assert result == pytest.approx(0.06)
+
+
+def test_historical_cvar_known_values():
+    returns = np.array([-0.10, -0.05, 0.00, 0.02, 0.04])
+    result = historical_cvar(returns, confidence_level=0.80)
+    assert result == pytest.approx(0.10)
+
+
+def test_var_rejects_invalid_confidence_level():
+    returns = np.array([-0.02, 0.01, 0.03])
+
+    with pytest.raises(ValueError):
+        historical_var(returns, confidence_level=1.0)
+
+    with pytest.raises(ValueError):
+        parametric_var(returns, confidence_level=0.0)
+
+
+def test_cvar_rejects_non_finite_returns():
+    returns = np.array([-0.02, np.nan, 0.03])
+
+    with pytest.raises(ValueError):
+        historical_cvar(returns)
+
+    with pytest.raises(ValueError):
+        parametric_cvar(returns)
+
+
+def test_portfolio_daily_returns_rejects_weights_not_summing_to_one():
+    asset_returns = np.array([
+        [0.01, 0.02],
+        [-0.01, 0.03],
+    ])
+
+    with pytest.raises(ValueError, match="sum to 1.0"):
+        portfolio_daily_returns(asset_returns, [0.40, 0.40])

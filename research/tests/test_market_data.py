@@ -126,3 +126,68 @@ def test_fetch_history_rejects_duplicate_dates(monkeypatch):
 
     with pytest.raises(ValueError, match="duplicate"):
         fetch_history("SBER", "shares", "2026-09-01", "2026-09-10")
+
+
+def test_fetch_history_retrieves_multiple_pages(monkeypatch):
+    class FakeResponse:
+        def __init__(self, start):
+            self.start = start
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            if self.start == 0:
+                rows = [
+                    ["2026-09-01", "SBER", "TQBR", 300.0],
+                    ["2026-09-02", "SBER", "TQBR", 301.0],
+                ]
+            else:
+                rows = [
+                    ["2026-09-03", "SBER", "TQBR", 302.0],
+                ]
+
+            total = 3
+
+            return {
+                "history": {
+                    "columns": [
+                        "TRADEDATE", "SECID", "BOARDID", "CLOSE"
+                    ],
+                    "data": rows,
+                },
+                "history.cursor": {
+                    "columns": ["START", "TOTAL", "PAGESIZE"],
+                    "data": [[self.start, total, 2]],
+                },
+            }
+
+    class FakeSession:
+        def __init__(self):
+            self.starts = []
+
+        def get(self, url, params, timeout):
+            start = params["start"]
+            self.starts.append(start)
+            return FakeResponse(start)
+
+        def close(self):
+            pass
+
+    session = FakeSession()
+
+    monkeypatch.setattr(
+        "research.src.market_data.requests.Session",
+        lambda: session,
+    )
+
+    result = fetch_history(
+        "SBER",
+        "shares",
+        "2026-09-01",
+        "2026-09-10",
+    )
+
+    assert len(result) == 3
+    assert result["CLOSE"].tolist() == [300.0, 301.0, 302.0]
+    assert session.starts == [0, 2]
