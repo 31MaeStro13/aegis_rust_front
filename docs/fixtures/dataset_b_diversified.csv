@@ -1,0 +1,6 @@
+ticker,name,instrument_type,quantity,current_price,total_value,weight,currency
+SU26238RMFS4,Russian Government Bond 26238,bond,5000.0,540.2,2701000.0,27.01,RUB
+SU29014RMFS6,Russian Government Bond 29014 (Floater),bond,2500.0,985.0,2462500.0,24.625,RUB
+LQDT,Liquidity Money Market ETF,etf,1200000.0,1.52,1824000.0,18.24,RUB
+SBER,Sberbank PJSC,share,5000.0,305.5,1527500.0,15.275,RUB
+TGLD,Gold ETF,etf,150000.0,9.9,1485000.0,14.85,RUB

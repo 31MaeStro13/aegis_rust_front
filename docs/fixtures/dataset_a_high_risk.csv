@@ -1,0 +1,5 @@
+ticker,name,instrument_type,quantity,current_price,total_value,weight,currency
+SBER,Sberbank PJSC,share,15000.0,305.5,4582500.0,45.825,RUB
+GAZP,Gazprom PJSC,share,20000.0,130.2,2604000.0,26.04,RUB
+LKOH,Lukoil PJSC,share,300.0,6850.0,2055000.0,20.55,RUB
+RUB,Russian Ruble Cash,currency,758500.0,1.0,758500.0,7.585,RUB
