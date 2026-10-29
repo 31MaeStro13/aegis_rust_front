@@ -33,3 +33,14 @@ venv/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Aegis quantitative research
+# Large downloaded market-data cache: do not commit
+/research/data/cache/*
+
+# Generated research outputs: reproduce by running the pipeline
+/research/data/processed/*
+
+# Keep placeholder files in the repository
+!/research/data/cache/.gitkeep
+!/research/data/processed/.gitkeep
