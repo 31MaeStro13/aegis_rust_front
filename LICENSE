@@ -1,15 +1,22 @@
 COMMERCIAL SOFTWARE LICENSE AGREEMENT (PROPRIETARY)
 
-Copyright (c) 2026 Aegis Technologies / Oleg Irshko. All Rights Reserved.
+Copyright (c) 2026 Aegis Technologies. All Rights Reserved.
+
+CO-AUTHORS & CONTRIBUTORS:
+- Oleg Irshko (Founder, Systems Architect & Backend Lead)
+- Anastasia Prudnikova (Systems & High-Performance Core Engineer)
+- Nikita Gritsynin (Desktop UI & Frontend Engineer)
+- Taisiya Golets (Product & UI/UX Designer)
+- Oluwasomidotun Odumosu (Quantitative Financial Analyst & ML Engineer)
 
 IMPORTANT: PLEASE READ THIS LICENSE AGREEMENT CAREFULLY BEFORE USING OR DEPLOYING THIS SOFTWARE.
 
 1. PROPRIETARY NATURE & OWNERSHIP
-This software, source code, algorithms, architectures, and associated documentation
-("Software") are the valuable proprietary property and confidential trade secrets of
-Aegis Technologies and Oleg Irshko ("Licensor"). All intellectual property rights,
-including copyrights, patents, trademarks, and trade secret rights in and to the Software,
-remain exclusively with the Licensor.
+This software, source code, algorithms, architectures, designs, and associated documentation
+("Software") are the valuable proprietary property and confidential trade secrets of the
+Co-Authors listed above ("Licensors"). All intellectual property rights, including copyrights,
+patents, trademarks, and trade secret rights in and to the Software, remain exclusively with
+the Licensors.
 
 2. LICENSE RESTRICTIONS
 This Software is NOT open-source and is NOT licensed under MIT, Apache, GPL, or any
@@ -19,17 +26,16 @@ is permitted to:
 (b) Reverse engineer, decompile, decrypt, disassemble, or extract proprietary financial algorithms;
 (c) Modify, adapt, translate, or create derivative works of the Software;
 (d) Deploy, execute, or utilize the Software in production, staging, or commercial environments
-    without a valid, fully executed commercial licensing agreement and an active, cryptographically
-    signed license activation key issued directly by the Licensor.
+    without a valid, fully executed commercial licensing agreement signed directly by the Licensors.
 
-3. ACTIVATION & ENFORCEMENT
-Operation of the Software within on-premise infrastructure requires periodic cryptographic
-license activation. Unauthorized bypass, tampering, or manipulation of the licensing
-subsystem constitutes copyright infringement and intentional breach of commercial agreement.
+3. CONTRIBUTIONS & INTERNAL AGREEMENT
+All contributions, modifications, designs, and analytical models produced by the Co-Authors
+are governed by internal partnership agreements and intellectual property assignments of the
+Aegis Wealth Terminal project.
 
 4. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
-IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, LOSS OF PROFITS,
+IN NO EVENT SHALL THE LICENSORS BE LIABLE FOR ANY CLAIM, DAMAGES, LOSS OF PROFITS,
 FINANCIAL TRADING LOSSES, OR OTHER LIABILITY ARISING FROM THE USE OF THE SOFTWARE.
 
 For commercial licensing, enterprise on-premise deployment, and activation keys, contact:

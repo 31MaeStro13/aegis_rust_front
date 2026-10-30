@@ -1,0 +1,118 @@
+{
+  "dataset_a": {
+    "name": "Dataset A — High Concentration Retail",
+    "description": "Портфель с критической концентрацией в российских акциях (Сбербанк, Газпром, Лукойл)",
+    "expected_metrics": {
+      "total_value": 10000000.0,
+      "hhi_index": 3257.85,
+      "concentration_level": "high",
+      "top_asset_ticker": "SBER",
+      "top_asset_share_pct": 45.83
+    },
+    "positions": [
+      {
+        "ticker": "SBER",
+        "name": "Sberbank PJSC",
+        "instrument_type": "share",
+        "quantity": 15000.0,
+        "current_price": 305.5,
+        "total_value": 4582500.0,
+        "weight": 45.825,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "GAZP",
+        "name": "Gazprom PJSC",
+        "instrument_type": "share",
+        "quantity": 20000.0,
+        "current_price": 130.2,
+        "total_value": 2604000.0,
+        "weight": 26.04,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "LKOH",
+        "name": "Lukoil PJSC",
+        "instrument_type": "share",
+        "quantity": 300.0,
+        "current_price": 6850.0,
+        "total_value": 2055000.0,
+        "weight": 20.55,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "RUB",
+        "name": "Russian Ruble Cash",
+        "instrument_type": "currency",
+        "quantity": 758500.0,
+        "current_price": 1.0,
+        "total_value": 758500.0,
+        "weight": 7.585,
+        "currency": "RUB"
+      }
+    ]
+  },
+  "dataset_b": {
+    "name": "Dataset B — Multi-Asset Diversified",
+    "description": "Сбалансированный портфель с ОФЗ, фондами ликвидности и золотом",
+    "expected_metrics": {
+      "total_value": 10000000.0,
+      "hhi_index": 2122.48,
+      "concentration_level": "medium",
+      "top_asset_ticker": "SU26238RMFS4",
+      "top_asset_share_pct": 27.01
+    },
+    "positions": [
+      {
+        "ticker": "SU26238RMFS4",
+        "name": "Russian Government Bond 26238",
+        "instrument_type": "bond",
+        "quantity": 5000.0,
+        "current_price": 540.2,
+        "total_value": 2701000.0,
+        "weight": 27.01,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "SU29014RMFS6",
+        "name": "Russian Government Bond 29014 (Floater)",
+        "instrument_type": "bond",
+        "quantity": 2500.0,
+        "current_price": 985.0,
+        "total_value": 2462500.0,
+        "weight": 24.625,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "LQDT",
+        "name": "Liquidity Money Market ETF",
+        "instrument_type": "etf",
+        "quantity": 1200000.0,
+        "current_price": 1.52,
+        "total_value": 1824000.0,
+        "weight": 18.24,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "SBER",
+        "name": "Sberbank PJSC",
+        "instrument_type": "share",
+        "quantity": 5000.0,
+        "current_price": 305.5,
+        "total_value": 1527500.0,
+        "weight": 15.275,
+        "currency": "RUB"
+      },
+      {
+        "ticker": "TGLD",
+        "name": "Gold ETF",
+        "instrument_type": "etf",
+        "quantity": 150000.0,
+        "current_price": 9.9,
+        "total_value": 1485000.0,
+        "weight": 14.85,
+        "currency": "RUB"
+      }
+    ]
+  }
+}
