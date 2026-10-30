@@ -25,7 +25,8 @@ def load_close_series(
 ) -> pd.Series:
     """Load one cached MOEX history as a validated close-price series.
 
-    Missing or invalid closes remain missing; they are never forward-filled.
+    Use CLOSE only; do not substitute LEGALCLOSEPRICE.
+    Missing or invalid CLOSE values remain missing and are never forward-filled.
     price_multiplier converts the source price into the chosen common unit.
     """
     frame = pd.read_csv(path)
@@ -50,8 +51,8 @@ def load_close_series(
     if not dates.is_monotonic_increasing:
         raise ValueError("History must be sorted by trade date")
 
-    # Keep missing and non-positive closes as missing observations.
     closes = closes.where(np.isfinite(closes) & (closes > 0))
+
     closes = closes * price_multiplier
 
     result = pd.Series(closes.to_numpy(), index=dates, name=security)
@@ -163,3 +164,140 @@ def calculate_portfolio_returns(
     portfolio = asset_returns @ ordered_weights
     portfolio.name = "portfolio_return"
     return portfolio
+
+def calculate_bond_total_returns(
+    dirty_prices: pd.Series,
+    cash_flows: pd.Series,
+    redemption_cash_flows: pd.Series | None = None,
+) -> pd.Series:
+    """Calculate bond total returns including coupons and principal redemption.
+
+    dirty_prices contains observed dirty market prices.
+    cash_flows contains coupon payments received during each period.
+    redemption_cash_flows contains principal repayments received during
+    each period.
+
+    Missing market prices remain missing. On a confirmed redemption date,
+    the contractual coupon and redemption payments can determine the
+    terminal payoff without inventing a market price.
+
+    The first return is NaN because no prior-period price is available.
+    """
+    if dirty_prices.empty:
+        raise ValueError("dirty_prices must not be empty")
+
+    if not dirty_prices.index.equals(cash_flows.index):
+        raise ValueError(
+            "dirty_prices and cash_flows must have matching indexes"
+        )
+
+    if redemption_cash_flows is None:
+        redemptions = pd.Series(
+            0.0,
+            index=dirty_prices.index,
+            dtype=float,
+        )
+    else:
+        if not dirty_prices.index.equals(redemption_cash_flows.index):
+            raise ValueError(
+                "dirty_prices and redemption_cash_flows "
+                "must have matching indexes"
+            )
+        redemptions = pd.to_numeric(
+            redemption_cash_flows,
+            errors="coerce",
+        ).astype(float)
+
+    prices = pd.to_numeric(
+        dirty_prices,
+        errors="coerce",
+    ).astype(float)
+    coupons = pd.to_numeric(
+        cash_flows,
+        errors="coerce",
+    ).astype(float)
+
+    for name, flows in (
+        ("cash_flows", coupons),
+        ("redemption_cash_flows", redemptions),
+    ):
+        if not np.isfinite(flows.to_numpy()).all():
+            raise ValueError(f"{name} must contain finite values")
+        if (flows < 0).any():
+            raise ValueError(f"{name} must be non-negative")
+
+    observed_prices = prices.dropna()
+    if not np.isfinite(observed_prices.to_numpy()).all():
+        raise ValueError("dirty_prices must be finite when present")
+
+    if (observed_prices <= 0).any():
+        raise ValueError("Observed dirty_prices must be positive")
+
+    previous_prices = prices.shift(1)
+    has_previous_price = previous_prices.notna() & (previous_prices > 0)
+
+    # Ordinary periods require an observed current market price.
+    ordinary_returns = (
+        (prices + coupons) / previous_prices - 1.0
+    )
+    ordinary_returns = ordinary_returns.where(
+        prices.notna() & has_previous_price
+    )
+
+    # A confirmed redemption supplies the terminal contractual payoff.
+    # It does not replace the missing market price with zero.
+    is_redemption = prices.isna() & redemptions.gt(0) & has_previous_price
+    terminal_returns = (
+        (coupons + redemptions) / previous_prices - 1.0
+    )
+
+    returns = ordinary_returns.where(~is_redemption, terminal_returns)
+    returns.name = "bond_total_return"
+    return returns
+
+
+def calculate_buy_and_hold_returns(
+    asset_returns: pd.DataFrame,
+    weights: Mapping[str, float],
+) -> pd.Series:
+    """Calculate portfolio returns while allowing asset weights to drift."""
+    if asset_returns.empty:
+        raise ValueError("asset_returns must not be empty")
+
+    if asset_returns.isna().any().any():
+        raise ValueError(
+            "Align and remove missing asset returns before portfolio calculation"
+        )
+
+    values = asset_returns.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError("Asset returns must be finite")
+
+    if (values < -1).any():
+        raise ValueError("Asset returns cannot be less than -100%")
+
+    current_weights = validate_weights(weights, list(asset_returns.columns))
+    portfolio_values = []
+
+    for row in values:
+        period_return = float(np.dot(current_weights.to_numpy(), row))
+        portfolio_values.append(period_return)
+
+        growth_factors = 1.0 + row
+        portfolio_growth = 1.0 + period_return
+
+        if portfolio_growth <= 0:
+            if len(portfolio_values) < len(values):
+                raise ValueError(
+                    "Cannot continue buy-and-hold calculation after total portfolio loss"
+                )
+            break
+
+        current_weights = current_weights * growth_factors / portfolio_growth
+
+    result = pd.Series(
+        portfolio_values,
+        index=asset_returns.index[:len(portfolio_values)],
+        name="buy_and_hold_return",
+    )
+    return result

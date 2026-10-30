@@ -49,10 +49,20 @@ DATASET_B_WEIGHTS = {
 # Source close values for these OFZ bonds are quoted in percentage points
 # of a 1,000 RUB face value: 1 quote point = 10 RUB.
 BOND_PRICE_MULTIPLIER = 10.0
+# Maturity cash-flow assumptions for SU29014RMFS6.
+# Coupon: RUB 38.70; principal redemption: RUB 1,000 per bond.
+# Verify both against an authoritative record before using total returns.
+BOND_MATURITY_CASH_FLOWS = {
+    "SU29014RMFS6": {
+        "maturity_date": "2026-03-25",
+        "coupon": 38.70,
+        "principal": 1000.00,
+    },
+}
 
 
 def load_security_prices() -> pd.DataFrame:
-    """Load the six benchmark securities and standardize their price units."""
+    """Load benchmark securities and standardize their price units."""
     specifications = {
         "SBER": ("SBER_TQBR_history.csv", 1.0),
         "GAZP": ("GAZP_TQBR_history.csv", 1.0),
@@ -65,25 +75,81 @@ def load_security_prices() -> pd.DataFrame:
             "SU29014RMFS6_TQOB_history.csv",
             BOND_PRICE_MULTIPLIER,
         ),
-        "LQDT": ("LQDT_TQTF_history.csv", 1.0),
-        "TGLD": ("TGLD_TQTF_history.csv", 1.0),
+        "LQDT": (
+            ["LQDT_TQTF_history.csv", "LQDT_TQBR_history.csv"],
+            1.0,
+        ),
+        "TGLD": (
+            ["TGLD_TQTF_history.csv", "TGLD_TQBR_history.csv"],
+            1.0,
+        ),
     }
 
     series = []
-    for security, (filename, multiplier) in specifications.items():
-        path = CACHE / filename
-        if not path.exists():
-            raise FileNotFoundError(f"Missing cached history: {path}")
 
-        prices = load_close_series(
-            str(path),
-            security=security,
-            price_multiplier=multiplier,
-        )
-        series.append(prices)
+    for security, (filenames, multiplier) in specifications.items():
+        # Support both a single cache filename and multiple board histories.
+        if isinstance(filenames, str):
+            filenames = [filenames]
 
-    # Outer alignment preserves missing observations instead of filling them.
-    panel = pd.concat(series, axis=1, join="outer", sort=True).sort_index()
+        price_series = []
+
+        for filename in filenames:
+            path = CACHE / filename
+
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"Missing cached history: {path}"
+                )
+
+            prices = load_close_series(
+                str(path),
+                security=security,
+                price_multiplier=multiplier,
+            )
+            price_series.append(prices)
+
+        # Combine multiple board histories without silently accepting
+        # conflicting prices on the same date.
+        if len(price_series) == 1:
+            combined_prices = price_series[0]
+        else:
+            combined = pd.concat(price_series, axis=1)
+
+            conflicts = combined.nunique(axis=1, dropna=True)
+            conflicting_dates = conflicts[conflicts > 1].index
+
+            if len(conflicting_dates) > 0:
+                dates = [
+                    date.strftime("%Y-%m-%d")
+                    for date in conflicting_dates
+                ]
+                raise ValueError(
+                    f"Conflicting prices for {security} on: {dates}"
+                )
+
+            # Prefer the first file when it has a price; otherwise use
+            # the next board's price for that date. This is not
+            # time-series forward-filling.
+            combined_prices = price_series[0]
+
+            for additional_prices in price_series[1:]:
+                combined_prices = combined_prices.combine_first(
+                    additional_prices
+                )
+
+            combined_prices.name = security
+
+        series.append(combined_prices)
+
+    # Outer alignment preserves missing observations.
+    panel = pd.concat(
+        series,
+        axis=1,
+        join="outer",
+        sort=True,
+    ).sort_index()
+
     panel.index.name = "TRADEDATE"
     return panel
 
@@ -148,6 +214,28 @@ def main() -> None:
     asset_returns.to_csv(
         OUTPUT / "asset_daily_returns.csv",
         index_label="TRADEDATE",
+    )
+    # Record assumed maturity cash flows separately from market prices.
+    cash_flow_rows = []
+
+    for security, details in BOND_MATURITY_CASH_FLOWS.items():
+        cash_flow_rows.append(
+            {
+                "TRADEDATE": details["maturity_date"],
+                "SECID": security,
+                "COUPON_RUB": details["coupon"],
+                "PRINCIPAL_REDEMPTION_RUB": details["principal"],
+                "TOTAL_CASH_FLOW_RUB": (
+                    details["coupon"] + details["principal"]
+                ),
+                "SOURCE": "Provisional assumptions; verify against authoritative records",
+            }
+        )
+
+    cash_flows = pd.DataFrame(cash_flow_rows)
+    cash_flows.to_csv(
+        OUTPUT / "bond_cash_flows.csv",
+        index=False,
     )
 
     # Dataset A: shares plus RUB cash. Cash is assumed to earn zero daily return.

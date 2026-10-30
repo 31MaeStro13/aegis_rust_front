@@ -38,5 +38,9 @@ Thumbs.db
 # Large downloaded market-data cache: do not commit
 /research/data/cache/*
 
-# Keep the cache directory in the repository
+# Generated research outputs: reproduce by running the pipeline
+/research/data/processed/*
+
+# Keep placeholder files in the repository
 !/research/data/cache/.gitkeep
+!/research/data/processed/.gitkeep

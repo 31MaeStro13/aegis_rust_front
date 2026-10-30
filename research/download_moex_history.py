@@ -1,114 +1,89 @@
-﻿from pathlib import Path
-import time
-import requests
-import pandas as pd
+"""Download and cache validated historical MOEX market data."""
 
-BASE_URL = "https://iss.moex.com/iss"
+import logging
+import sys
+from pathlib import Path
+
+from research.src.market_data import fetch_history, save_history_cache
+
+
 START_DATE = "2023-10-01"
 END_DATE = "2026-10-18"
-PAGE_SIZE = 100
 CACHE_DIR = Path("research/data/cache")
-CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-securities = [
+SECURITIES = [
     ("GAZP", "shares", "TQBR"),
     ("LKOH", "shares", "TQBR"),
     ("SU26238RMFS4", "bonds", "TQOB"),
     ("SU29014RMFS6", "bonds", "TQOB"),
-    ("LQDT", "shares", "TQTF"),
-    ("TGLD", "shares", "TQTF"),
+    ("LQDT", "shares", "TQBR"),
+    ("TGLD", "shares", "TQBR"),
 ]
 
-session = requests.Session()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-for security, market, board in securities:
-    print(f"\n--- Downloading {security} / {board} ---")
 
-    url = (
-        f"{BASE_URL}/history/engines/stock/markets/{market}"
-        f"/boards/{board}/securities/{security}.json"
-    )
+def main():
+    """Download each configured security and save its history."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    failed_securities = []
 
-    all_pages = []
-    start = 0
-    expected_total = None
+    for security, market, board in SECURITIES:
+        logger.info("Downloading %s / %s", security, board)
 
-    try:
-        while True:
-            params = {
-                "from": START_DATE,
-                "till": END_DATE,
-                "start": start,
-                "iss.meta": "off",
-                "iss.only": "history,history.cursor",
-                "history.columns": "TRADEDATE,SECID,BOARDID,CLOSE",
-            }
-
-            response = session.get(url, params=params, timeout=45)
-            response.raise_for_status()
-            payload = response.json()
-
-            history = payload.get("history", {})
-            columns = history.get("columns", [])
-            rows = history.get("data", [])
-
-            cursor = payload.get("history.cursor", {})
-            cursor_rows = cursor.get("data", [])
-            cursor_columns = cursor.get("columns", [])
-
-            if cursor_rows:
-                cursor_data = dict(zip(cursor_columns, cursor_rows[0]))
-                expected_total = cursor_data.get("TOTAL")
-
-            if not rows:
-                break
-
-            page = pd.DataFrame(rows, columns=columns)
-            all_pages.append(page)
-
-            print(
-                f"Page start={start}: {len(page)} rows; "
-                f"downloaded so far={sum(len(x) for x in all_pages)}"
+        try:
+            df = fetch_history(
+                security,
+                market,
+                START_DATE,
+                END_DATE,
+                board=board,
             )
 
-            start += len(rows)
+            if df.empty:
+                logger.error(
+                    "No history returned for %s / %s; no file saved",
+                    security,
+                    board,
+                )
+                failed_securities.append(f"{security} / {board}")
+                continue
 
-            if expected_total is not None and start >= int(expected_total):
-                break
+            logger.info("Downloaded rows: %d", len(df))
+            logger.info(
+                "Date range: %s to %s",
+                df["TRADEDATE"].min(),
+                df["TRADEDATE"].max(),
+            )
 
-            time.sleep(0.2)
+            output_path = save_history_cache(
+                df,
+                security,
+                cache_dir=CACHE_DIR,
+                board=board,
+                market=market,
+            )
 
-        if not all_pages:
-            print("WARNING: No history returned; no file saved.")
-            continue
+            logger.info("Saved: %s", output_path.resolve())
 
-        df = pd.concat(all_pages, ignore_index=True)
-        df["TRADEDATE"] = pd.to_datetime(df["TRADEDATE"], errors="coerce")
-        df["CLOSE"] = pd.to_numeric(df["CLOSE"], errors="coerce")
-        df = df.sort_values("TRADEDATE").reset_index(drop=True)
+        except Exception:
+            failed_securities.append(f"{security} / {board}")
+            logger.exception("MOEX fetch failed")
 
-        duplicate_dates = int(df["TRADEDATE"].duplicated().sum())
-        missing_dates = int(df["TRADEDATE"].isna().sum())
-        missing_closes = int(df["CLOSE"].isna().sum())
-        nonpositive_closes = int((df["CLOSE"].dropna() <= 0).sum())
+    if failed_securities:
+        logger.error(
+            "Download process finished with failures: %s",
+            ", ".join(failed_securities),
+        )
+        return 1
 
-        print("Expected rows:", expected_total)
-        print("Downloaded rows:", len(df))
-        print("Date range:",
-              df["TRADEDATE"].min(),
-              "to",
-              df["TRADEDATE"].max())
-        print("Duplicate dates:", duplicate_dates)
-        print("Invalid dates:", missing_dates)
-        print("Missing closes:", missing_closes)
-        print("Non-positive closes:", nonpositive_closes)
+    logger.info("Download process finished successfully.")
+    return 0
 
-        filename = f"{security}_{board}_history.csv"
-        output_path = CACHE_DIR / filename
-        df.to_csv(output_path, index=False, date_format="%Y-%m-%d")
-        print("Saved:", output_path.resolve())
 
-    except Exception as exc:
-        print("ERROR:", repr(exc))
-
-print("\nDownload process finished.")
+if __name__ == "__main__":
+    sys.exit(main())

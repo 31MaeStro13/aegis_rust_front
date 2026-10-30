@@ -1,5 +1,8 @@
 ﻿"""Deterministic portfolio risk metrics for Aegis Wealth Terminal."""
 
+from math import exp, pi, sqrt
+from statistics import NormalDist
+
 import numpy as np
 
 
@@ -195,7 +198,6 @@ def historical_cvar(returns, confidence_level=0.95):
 
 def parametric_var(returns, confidence_level=0.95):
     """Normal-distribution VaR as a positive loss fraction."""
-    from statistics import NormalDist
 
     returns = np.asarray(returns, dtype=float)
 
@@ -217,8 +219,6 @@ def parametric_var(returns, confidence_level=0.95):
 
 def parametric_cvar(returns, confidence_level=0.95):
     """Normal-distribution CVaR/Expected Shortfall as a positive loss fraction."""
-    from math import exp, pi, sqrt
-    from statistics import NormalDist
 
     returns = np.asarray(returns, dtype=float)
 
