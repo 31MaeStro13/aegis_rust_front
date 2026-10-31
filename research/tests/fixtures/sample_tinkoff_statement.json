@@ -1,0 +1,66 @@
+{
+  "broker": "Tinkoff",
+  "account_id": "TINKOFF_ACC_001",
+  "report_date": "2026-10-16",
+  "currency": "RUB",
+  "positions": [
+    {
+      "ticker": "SBER",
+      "isin": "RU0009029540",
+      "name": "Сбербанк России ПАО ао",
+      "instrument_type": "share",
+      "quantity": 100,
+      "current_price": 280.50,
+      "currency": "RUB",
+      "total_value": 28050.00
+    },
+    {
+      "ticker": "GAZP",
+      "isin": "RU0007661625",
+      "name": "Газпром ПАО ао",
+      "instrument_type": "share",
+      "quantity": 50,
+      "current_price": 135.20,
+      "currency": "RUB",
+      "total_value": 6760.00
+    },
+    {
+      "ticker": "SU26238RMFS4",
+      "isin": "RU000A1028C7",
+      "name": "ОФЗ 26238",
+      "instrument_type": "bond",
+      "quantity": 20,
+      "nominal": 1000.0,
+      "clean_price_pct": 52.40,
+      "nkd": 14.85,
+      "currency": "RUB",
+      "total_value": 10777.00
+    },
+    {
+      "ticker": "LQDT",
+      "isin": "RU000A101344",
+      "name": "Ликвидность БПИФ",
+      "instrument_type": "etf",
+      "quantity": 5000,
+      "current_price": 1.45,
+      "currency": "RUB",
+      "total_value": 7250.00
+    },
+    {
+      "ticker": "USD000UTSTOM",
+      "isin": null,
+      "name": "Доллар США",
+      "instrument_type": "currency",
+      "quantity": 100.0,
+      "current_price": 96.50,
+      "currency": "USD",
+      "total_value": 9650.00
+    }
+  ],
+  "cash": [
+    {
+      "currency": "RUB",
+      "amount": 15420.50
+    }
+  ]
+}
